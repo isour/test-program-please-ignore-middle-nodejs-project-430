@@ -14,7 +14,7 @@ interface CityDto {
 }
 
 /** Flight по contract/main.tsp: числа — числа, моменты — ISO UTC с Z. */
-interface FlightDto {
+export interface FlightDto {
   id: string;
   flightNumber: string;
   airline: { code: string; name: string };
@@ -80,9 +80,10 @@ function cityDto(code: string, name: string, country: string | null): CityDto {
 function toIsoUtc(value: string | Date): string {
   return (value instanceof Date ? value : new Date(value)).toISOString();
 }
+export { toIsoUtc };
 
 /** Единственный маппер — одинаковая сборка ответа для поиска и GET по id. */
-function toFlightDto(row: FlightRow): FlightDto {
+export function toFlightDto(row: FlightRow): FlightDto {
   return {
     id: row.id,
     flightNumber: row.flightNumber,
@@ -146,7 +147,7 @@ function parseSearchParams(query: unknown): SearchParams {
 }
 
 /** Общий join: рейс + авиакомпания + два города (origin/destination). */
-function flightsQuery() {
+export function flightsQuery() {
   return db
     .select(flightSelect)
     .from(flights)
