@@ -4,6 +4,7 @@ import fastifyStatic from '@fastify/static';
 import { apiErrorHandler } from './errors.ts';
 import { db } from './db.ts';
 import { cities } from './db/schema.ts';
+import { registerFlightRoutes } from './routes/flights.ts';
 
 export async function buildApp(): Promise<FastifyInstance> {
   const app = Fastify({
@@ -28,6 +29,10 @@ export async function buildApp(): Promise<FastifyInstance> {
       .from(cities)
       .orderBy(cities.sortOrder),
   );
+
+  // Поиск рейсов (ШАГ 6). Регистрируется ДО setNotFoundHandler:
+  // явные /api-маршруты (параметр выше wildcard статики) перекрывают fallback.
+  registerFlightRoutes(app);
 
   // SPA-fallback: неизвестный путь внутри /api/ → JSON-404,
   // любой другой путь → index.html (прямые ссылки /booking/<id>, /lookup).

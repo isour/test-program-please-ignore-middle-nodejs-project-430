@@ -118,6 +118,10 @@ curl http://localhost:8080/api/health
 # Города идут из БД, по sort_order: MOW, LED, AER, KZN, SVX, OVB, KGD
 curl http://localhost:8080/api/cities
 # [{"code":"MOW","name":"Москва","country":"Россия"},{"code":"LED","name":"Санкт-Петербург","country":"Россия"}, ...]
+
+# Поиск рейсов: день вылета — по UTC, пусто (в т.ч. origin==destination) — это 200 []
+curl "http://localhost:8080/api/flights?origin=MOW&destination=LED&date=$(date -u +%F)"
+# [{"id":"SU123-MOW-LED-...","flightNumber":"SU123","airline":{"code":"SU","name":"Аэрофлот"}, ...}]
 ```
 
 ---
