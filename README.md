@@ -12,6 +12,12 @@
 Учебный проект Хекслета: https://ru.hexlet.io/programs/test-program-please-ignore-middle-nodejs
 Как это должно работать: https://files.hexlet.app/a/5bi6gu
 
+## Демо
+
+Проект развёрнут на Render: https://test-program-please-ignore-middle-nodejs.onrender.com
+
+API: `/api/health`, `/api/cities`, `/api/flights`, `/api/bookings`. Бесплатный план: первый запрос после простоя может идти около минуты.
+
 ## Стек
 
 - TypeScript (исполняется Node.js 22.18+ напрямую, без шага сборки)
