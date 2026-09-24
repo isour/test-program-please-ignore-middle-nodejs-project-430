@@ -1,0 +1,453 @@
+openapi: 3.0.0
+info:
+  title: Flight Booking API
+  version: 0.0.0
+tags: []
+paths:
+  /api/bookings:
+    post:
+      operationId: createBooking
+      description: |-
+        Оформление брони.
+        400: пустой список пассажиров, отсутствующее либо пустое обязательное поле, неизвестный flightId.
+        422 намеренно не используется.
+      parameters: []
+      responses:
+        '201':
+          description: The request has succeeded and a new resource has been created as a result.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Booking'
+        '400':
+          description: The server could not understand the request due to invalid syntax.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/CreateBookingRequest'
+        description: Данные новой брони.
+  /api/bookings/{code}:
+    get:
+      operationId: getBooking
+      description: |-
+        Просмотр брони по коду.
+
+        lastName фактически обязателен: отсутствие параметра, неверная фамилия и неизвестный код
+        всегда отвечают одинаковым 404 с одинаковым сообщением — чтобы нельзя было перебирать коды;
+        400 по этому эндпоинту не бывает, схема lastName не валидируется.
+        Фамилия сравнивается без учёта регистра и внешних пробелов и сверяется с любым пассажиром брони.
+      parameters:
+        - name: code
+          in: path
+          required: true
+          description: 'Код брони: шесть символов [A-Z0-9]; паттерн на входе не проверяется — см. описание операции.'
+          schema:
+            type: string
+        - name: lastName
+          in: query
+          required: false
+          description: Фамилия пассажира; фактически обязателен, но схемой не валидируется — см. описание операции.
+          schema:
+            type: string
+          explode: false
+      responses:
+        '200':
+          description: The request has succeeded.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Booking'
+        '404':
+          description: The server cannot find the requested resource.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+  /api/bookings/{code}/cancel:
+    post:
+      operationId: cancelBooking
+      description: |-
+        Отмена брони.
+
+        lastName описывается мягко, как в GET: пустое либо неверное значение и неизвестный код — всегда 404.
+        Ответ — та же бронь со статусом cancelled (не пустой ответ).
+        Повторная отмена допустима: снова 200 со статусом cancelled.
+      parameters:
+        - name: code
+          in: path
+          required: true
+          description: 'Код брони: шесть символов [A-Z0-9]; паттерн на входе не проверяется.'
+          schema:
+            type: string
+      responses:
+        '200':
+          description: The request has succeeded.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Booking'
+        '404':
+          description: The server cannot find the requested resource.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/CancelBookingRequest'
+        description: Данные для отмены.
+  /api/cities:
+    get:
+      operationId: listCities
+      description: 'Справочник городов: плоский массив городов целиком, без пагинации; пусто — обычный 200 [].'
+      parameters: []
+      responses:
+        '200':
+          description: The request has succeeded.
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/City'
+  /api/flights:
+    get:
+      operationId: listFlights
+      description: |-
+        Поиск рейсов.
+        Пустой результат — 200 [] (в том числе при origin == destination), это не ошибка.
+      parameters:
+        - name: origin
+          in: query
+          required: true
+          description: Код города вылета.
+          schema:
+            type: string
+            minLength: 1
+          explode: false
+        - name: destination
+          in: query
+          required: true
+          description: Код города прилёта.
+          schema:
+            type: string
+            minLength: 1
+          explode: false
+        - name: date
+          in: query
+          required: true
+          description: Дата вылета в формате YYYY-MM-DD.
+          schema:
+            type: string
+            format: date
+          explode: false
+        - name: passengers
+          in: query
+          required: false
+          description: Число пассажиров; по умолчанию 1.
+          schema:
+            type: integer
+            format: int32
+            default: 1
+          explode: false
+      responses:
+        '200':
+          description: The request has succeeded.
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/Flight'
+        '400':
+          description: The server could not understand the request due to invalid syntax.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+  /api/flights/{id}:
+    get:
+      operationId: getFlight
+      description: Рейс по идентификатору; неизвестный идентификатор — 404.
+      parameters:
+        - name: id
+          in: path
+          required: true
+          description: Идентификатор рейса (без пробелов и слешей).
+          schema:
+            type: string
+      responses:
+        '200':
+          description: The request has succeeded.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Flight'
+        '404':
+          description: The server cannot find the requested resource.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+  /api/health:
+    get:
+      operationId: health
+      description: Проверка живости сервиса.
+      parameters: []
+      responses:
+        '200':
+          description: The request has succeeded.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/HealthResponse'
+components:
+  schemas:
+    Airline:
+      type: object
+      required:
+        - code
+        - name
+      properties:
+        code:
+          type: string
+          description: Код авиакомпании (например SU).
+        name:
+          type: string
+          description: Название авиакомпании.
+      description: Авиакомпания.
+    Booking:
+      type: object
+      required:
+        - code
+        - status
+        - flight
+        - passengers
+        - contact
+        - totalPrice
+        - createdAt
+      properties:
+        code:
+          type: string
+          description: |-
+            Короткий уникальный код брони: ровно шесть символов [A-Z0-9], например ABC123.
+            Генерируется сервером; паттерн-валидация к клиенту не навязывается.
+        status:
+          type: string
+          enum:
+            - confirmed
+            - cancelled
+          description: Статус брони.
+        flight:
+          allOf:
+            - $ref: '#/components/schemas/Flight'
+          description: Рейс целиком.
+        passengers:
+          type: array
+          items:
+            $ref: '#/components/schemas/Passenger'
+          description: Пассажиры брони — минимум один.
+        contact:
+          allOf:
+            - $ref: '#/components/schemas/Contact'
+          description: Контакт заказчика.
+        totalPrice:
+          allOf:
+            - $ref: '#/components/schemas/Money'
+          description: 'Итоговая стоимость: цена за пассажира × число пассажиров, считает сервер.'
+        createdAt:
+          type: string
+          format: date-time
+          description: Момент создания брони, ISO 8601 UTC.
+      description: Бронирование.
+    CancelBookingRequest:
+      type: object
+      required:
+        - lastName
+      properties:
+        lastName:
+          type: string
+          description: |-
+            Фамилия любого пассажира брони; сравнение без учёта регистра и внешних пробелов.
+            Пустое или неверное значение — всегда 404 с обычным сообщением (не 400).
+      description: Тело запроса на отмену брони.
+    City:
+      type: object
+      required:
+        - code
+        - name
+      properties:
+        code:
+          type: string
+          description: Код города (например MOW).
+        name:
+          type: string
+          description: Название города.
+        country:
+          type: string
+          description: Страна, если известна.
+      description: Город из справочника.
+    Contact:
+      type: object
+      required:
+        - email
+        - phone
+      properties:
+        email:
+          type: string
+          minLength: 1
+          description: 'Email: обычная строка, формат схемой не проверяется.'
+        phone:
+          type: string
+          minLength: 1
+          description: 'Телефон: обычная строка, шаблон не проверяется.'
+      description: Контактные данные заказчика.
+    CreateBookingRequest:
+      type: object
+      required:
+        - flightId
+        - contact
+        - passengers
+      properties:
+        flightId:
+          type: string
+          minLength: 1
+          description: Идентификатор существующего рейса; неизвестный — 400.
+        contact:
+          allOf:
+            - $ref: '#/components/schemas/Contact'
+          description: Контакт заказчика.
+        passengers:
+          type: array
+          items:
+            $ref: '#/components/schemas/Passenger'
+          minItems: 1
+          description: 'Пассажиры: минимум один, пустой список — 400.'
+      description: Тело запроса на создание брони.
+    Error:
+      type: object
+      required:
+        - code
+        - message
+      properties:
+        code:
+          type: string
+          description: 'Машиночитаемый код ошибки: validation_error (400) либо not_found (404).'
+        message:
+          type: string
+          description: Человекочитаемое сообщение.
+      description: Единая модель ошибки API.
+    Flight:
+      type: object
+      required:
+        - id
+        - flightNumber
+        - airline
+        - origin
+        - destination
+        - departureAt
+        - arrivalAt
+        - durationMinutes
+        - price
+        - seatsAvailable
+      properties:
+        id:
+          type: string
+          description: 'Идентификатор рейса: без пробелов и слешей, используется в URL.'
+        flightNumber:
+          type: string
+          description: Номер рейса (например SU100).
+        airline:
+          allOf:
+            - $ref: '#/components/schemas/Airline'
+          description: Авиакомпания.
+        origin:
+          allOf:
+            - $ref: '#/components/schemas/City'
+          description: Город вылета.
+        destination:
+          allOf:
+            - $ref: '#/components/schemas/City'
+          description: Город прилёта (город целиком).
+        departureAt:
+          type: string
+          format: date-time
+          description: 'Время вылета, ISO 8601 UTC: 2026-07-01T08:00:00Z.'
+        arrivalAt:
+          type: string
+          format: date-time
+          description: Время прилёта, ISO 8601 UTC.
+        durationMinutes:
+          type: integer
+          format: int32
+          description: Длительность перелёта в минутах.
+        price:
+          allOf:
+            - $ref: '#/components/schemas/Money'
+          description: Цена за одного пассажира.
+        seatsAvailable:
+          type: integer
+          format: int32
+          description: Число свободных мест.
+      description: Рейс.
+    HealthResponse:
+      type: object
+      required:
+        - status
+      properties:
+        status:
+          type: string
+          enum:
+            - ok
+          description: Всегда "ok".
+      description: Ответ проверки живости.
+    Money:
+      type: object
+      required:
+        - amount
+        - currency
+      properties:
+        amount:
+          type: integer
+          format: int32
+          description: Сумма — целое число.
+        currency:
+          type: string
+          enum:
+            - RUB
+          description: 'Валюта: всегда RUB.'
+      description: Денежная сумма.
+    Passenger:
+      type: object
+      required:
+        - firstName
+        - lastName
+        - dateOfBirth
+        - documentNumber
+      properties:
+        firstName:
+          type: string
+          minLength: 1
+          description: Имя.
+        lastName:
+          type: string
+          minLength: 1
+          description: Фамилия.
+        dateOfBirth:
+          type: string
+          format: date
+          description: Дата рождения — только дата, 1990-05-20.
+        documentNumber:
+          type: string
+          minLength: 1
+          description: 'Номер документа: любая непустая строка, например "1".'
+      description: 'Пассажир: живёт только внутри брони.'
