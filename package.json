@@ -9,7 +9,7 @@
   "scripts": {
     "start": "node src/server.ts",
     "dev": "node --watch src/server.ts",
-    "test": "node --test",
+    "test": "vitest run",
     "lint": "tsc --noEmit",
     "typecheck": "tsc --noEmit"
   },
@@ -29,6 +29,7 @@
     "@typespec/openapi": "^1.16.0",
     "@typespec/openapi3": "^1.16.0",
     "drizzle-kit": "^0.31.11",
-    "typescript": "^7.0.2"
+    "typescript": "^7.0.2",
+    "vitest": "^5.0.1"
   }
 }

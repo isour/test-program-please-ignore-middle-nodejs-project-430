@@ -1,6 +1,7 @@
 # Бекенд для бронирования авиабилетов (Node.js)
 
 [![hexlet-check](https://github.com/isour/test-program-please-ignore-middle-nodejs-project-430/actions/workflows/hexlet-check.yml/badge.svg)](https://github.com/isour/test-program-please-ignore-middle-nodejs-project-430/actions)
+[![CI](https://github.com/isour/test-program-please-ignore-middle-nodejs-project-430/actions/workflows/ci.yml/badge.svg)](https://github.com/isour/test-program-please-ignore-middle-nodejs-project-430/actions/workflows/ci.yml)
 
 Реализуйте бекенд сервиса бронирования авиабилетов: справочник городов, поиск рейсов,
 оформление, просмотр и отмену брони. Код на TypeScript, данные храните в PostgreSQL,
@@ -61,9 +62,14 @@ npm run dev
 # Проверка типов
 make lint
 
-# Тесты
-npm test
+# Тесты (Vitest)
+make test
 ```
+
+Тесты — на [Vitest](https://vitest.dev/): бьют по приложению целиком через `app.inject`,
+БД и свободные порты им не нужны (`npx vitest run` — эквивалент). Каждый push проверяется
+в GitHub Actions (`.github/workflows/ci.yml`): `npm ci` → `make build` → `make lint` → `make test`;
+статус — бейдж CI в начале README.
 
 Сервер слушает `0.0.0.0` и отдаёт фронтенд и API на одном порту — CORS не нужен,
 фронтенд обращается к `/api/...` по относительным путям с того же адреса.

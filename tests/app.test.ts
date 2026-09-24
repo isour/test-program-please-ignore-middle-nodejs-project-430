@@ -1,5 +1,4 @@
-import test, { after, before } from 'node:test';
-import assert from 'node:assert/strict';
+import { afterAll, beforeAll, expect, it } from 'vitest';
 import fs from 'node:fs';
 import path from 'node:path';
 import type { FastifyInstance } from 'fastify';
@@ -13,7 +12,7 @@ let createdDir = false;
 let createdIndex = false;
 let app: FastifyInstance;
 
-before(async () => {
+beforeAll(async () => {
   if (!fs.existsSync(publicDir)) {
     fs.mkdirSync(publicDir, { recursive: true });
     createdDir = true;
@@ -28,7 +27,7 @@ before(async () => {
   app = await buildApp();
 });
 
-after(async () => {
+afterAll(async () => {
   await app.close();
   if (createdIndex && fs.existsSync(indexPath)) {
     fs.rmSync(indexPath);
@@ -42,41 +41,41 @@ after(async () => {
   }
 });
 
-test('GET /api/cities returns empty array', async () => {
+it('GET /api/cities returns empty array', async () => {
   const response = await app.inject({ method: 'GET', url: '/api/cities' });
 
-  assert.equal(response.statusCode, 200);
-  assert.deepEqual(response.json(), []);
+  expect(response.statusCode).toBe(200);
+  expect(response.json()).toEqual([]);
 });
 
-test('unknown /api/... returns JSON 404', async () => {
+it('unknown /api/... returns JSON 404', async () => {
   const response = await app.inject({ method: 'GET', url: '/api/nope' });
 
-  assert.equal(response.statusCode, 404);
-  assert.deepEqual(response.json(), {
+  expect(response.statusCode).toBe(404);
+  expect(response.json()).toEqual({
     code: 'not_found',
     message: 'Unknown endpoint',
   });
 });
 
-test('GET / serves index.html', async () => {
+it('GET / serves index.html', async () => {
   const response = await app.inject({ method: 'GET', url: '/' });
 
-  assert.equal(response.statusCode, 200);
-  assert.match(response.headers['content-type'] ?? '', /text\/html/);
-  assert.match(response.body, /<html/i);
+  expect(response.statusCode).toBe(200);
+  expect(response.headers['content-type'] ?? '').toMatch(/text\/html/);
+  expect(response.body).toMatch(/<html/i);
 });
 
-test('SPA-fallback: GET /booking/1 serves index.html', async () => {
+it('SPA-fallback: GET /booking/1 serves index.html', async () => {
   const response = await app.inject({ method: 'GET', url: '/booking/1' });
 
-  assert.equal(response.statusCode, 200);
-  assert.match(response.headers['content-type'] ?? '', /text\/html/);
+  expect(response.statusCode).toBe(200);
+  expect(response.headers['content-type'] ?? '').toMatch(/text\/html/);
 });
 
-test('GET /api/health returns ok', async () => {
+it('GET /api/health returns ok', async () => {
   const response = await app.inject({ method: 'GET', url: '/api/health' });
 
-  assert.equal(response.statusCode, 200);
-  assert.deepEqual(response.json(), { status: 'ok' });
+  expect(response.statusCode).toBe(200);
+  expect(response.json()).toEqual({ status: 'ok' });
 });

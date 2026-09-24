@@ -1,4 +1,4 @@
-.PHONY: install build start lint contract
+.PHONY: install build start lint contract test
 
 install:
 	npm ci
@@ -16,3 +16,6 @@ lint:
 
 contract:
 	npx tsp compile contract
+
+test:
+	npm test

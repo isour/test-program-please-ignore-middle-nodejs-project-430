@@ -1,5 +1,4 @@
-import test from 'node:test';
-import assert from 'node:assert/strict';
+import { expect, it } from 'vitest';
 import type { FastifyError, FastifyReply, FastifyRequest } from 'fastify';
 import { apiErrorHandler, ApiError, ValidationError } from '../src/errors.ts';
 
@@ -33,52 +32,52 @@ function callHandler(error: unknown) {
   return { ...state, logged };
 }
 
-test('ValidationError → 400 validation_error', () => {
+it('ValidationError → 400 validation_error', () => {
   const result = callHandler(new ValidationError('bad payload'));
 
-  assert.equal(result.statusCode, 400);
-  assert.deepEqual(result.body, { code: 'validation_error', message: 'bad payload' });
+  expect(result.statusCode).toBe(400);
+  expect(result.body).toEqual({ code: 'validation_error', message: 'bad payload' });
 });
 
-test('ApiError.notFound → 404 not_found', () => {
+it('ApiError.notFound → 404 not_found', () => {
   const result = callHandler(ApiError.notFound('City not found'));
 
-  assert.equal(result.statusCode, 404);
-  assert.deepEqual(result.body, { code: 'not_found', message: 'City not found' });
+  expect(result.statusCode).toBe(404);
+  expect(result.body).toEqual({ code: 'not_found', message: 'City not found' });
 });
 
-test('framework 4xx keeps status and maps code from table', () => {
+it('framework 4xx keeps status and maps code from table', () => {
   const badRequest = callHandler(
     Object.assign(new Error('Malformed JSON'), { statusCode: 400 }),
   );
-  assert.equal(badRequest.statusCode, 400);
-  assert.deepEqual(badRequest.body, { code: 'validation_error', message: 'Malformed JSON' });
+  expect(badRequest.statusCode).toBe(400);
+  expect(badRequest.body).toEqual({
+    code: 'validation_error',
+    message: 'Malformed JSON',
+  });
 
   const forbidden = callHandler(
     Object.assign(new Error('Forbidden path'), { statusCode: 403 }),
   );
-  assert.equal(forbidden.statusCode, 403);
-  assert.deepEqual(forbidden.body, { code: 'forbidden', message: 'Forbidden path' });
+  expect(forbidden.statusCode).toBe(403);
+  expect(forbidden.body).toEqual({ code: 'forbidden', message: 'Forbidden path' });
 
   const methodNotAllowed = callHandler(
     Object.assign(new Error('Method'), { statusCode: 405 }),
   );
-  assert.equal(methodNotAllowed.statusCode, 405);
-  assert.equal(
-    (methodNotAllowed.body as { code: string }).code,
-    'method_not_allowed',
-  );
+  expect(methodNotAllowed.statusCode).toBe(405);
+  expect((methodNotAllowed.body as { code: string }).code).toBe('method_not_allowed');
 });
 
-test('5xx → internal_error without details, full error goes to log', () => {
+it('5xx → internal_error without details, full error goes to log', () => {
   const boom = new Error('secret connection string leaked');
   const result = callHandler(boom);
 
-  assert.equal(result.statusCode, 500);
-  assert.deepEqual(result.body, {
+  expect(result.statusCode).toBe(500);
+  expect(result.body).toEqual({
     code: 'internal_error',
     message: 'Внутренняя ошибка сервера',
   });
-  assert.equal(result.logged, true);
-  assert.ok(!(JSON.stringify(result.body) as string).includes('secret'));
+  expect(result.logged).toBe(true);
+  expect(JSON.stringify(result.body)).not.toContain('secret');
 });
