@@ -2,6 +2,8 @@ import path from 'node:path';
 import Fastify, { type FastifyInstance } from 'fastify';
 import fastifyStatic from '@fastify/static';
 import { apiErrorHandler } from './errors.ts';
+import { db } from './db.ts';
+import { cities } from './db/schema.ts';
 
 export async function buildApp(): Promise<FastifyInstance> {
   const app = Fastify({
@@ -16,7 +18,16 @@ export async function buildApp(): Promise<FastifyInstance> {
   });
 
   app.get('/api/health', async () => ({ status: 'ok' }));
-  app.get('/api/cities', async () => []);
+  app.get('/api/cities', async () =>
+    db
+      .select({
+        code: cities.code,
+        name: cities.name,
+        country: cities.country,
+      })
+      .from(cities)
+      .orderBy(cities.sortOrder),
+  );
 
   // SPA-fallback: неизвестный путь внутри /api/ → JSON-404,
   // любой другой путь → index.html (прямые ссылки /booking/<id>, /lookup).

@@ -41,12 +41,18 @@ afterAll(async () => {
   }
 });
 
-it('GET /api/cities returns empty array', async () => {
-  const response = await app.inject({ method: 'GET', url: '/api/cities' });
+it.skipIf(Boolean(process.env.DATABASE_URL))(
+  'GET /api/cities without database returns 500 internal_error',
+  async () => {
+    const response = await app.inject({ method: 'GET', url: '/api/cities' });
 
-  expect(response.statusCode).toBe(200);
-  expect(response.json()).toEqual([]);
-});
+    expect(response.statusCode).toBe(500);
+    expect(response.json()).toEqual({
+      code: 'internal_error',
+      message: 'Внутренняя ошибка сервера',
+    });
+  },
+);
 
 it('unknown /api/... returns JSON 404', async () => {
   const response = await app.inject({ method: 'GET', url: '/api/nope' });

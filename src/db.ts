@@ -1,7 +1,8 @@
 import { drizzle, type PostgresJsDatabase } from 'drizzle-orm/postgres-js';
 import postgres from 'postgres';
+import * as schema from './db/schema.ts';
 
-type Db = PostgresJsDatabase<Record<string, unknown>>;
+export type Db = PostgresJsDatabase<typeof schema>;
 
 let client: postgres.Sql | undefined;
 let instance: Db | undefined;
@@ -24,8 +25,12 @@ export function requireDatabaseUrl(): string {
  * поэтому БД не нужна ни тестам приложения, ни серверу до реальных запросов к БД.
  */
 function getDb(): Db {
-  client ??= postgres(requireDatabaseUrl(), { max: 10 });
-  instance ??= drizzle(client);
+  client ??= postgres(requireDatabaseUrl(), {
+    max: 10,
+    // NOTICE от повторного применения миграций (schema/table уже существуют) не шумит в логах.
+    onnotice: () => {},
+  });
+  instance ??= drizzle(client, { schema });
   return instance;
 }
 

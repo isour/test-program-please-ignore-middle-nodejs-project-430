@@ -50,10 +50,11 @@ cp .env.example .env
 ## Использование
 
 ```bash
-# Собрать статику фронтенда в public/ (без БД — сборка миграций в build не входит)
+# Собрать статику фронтенда в public/ (без БД — сборка статики в миграциях не нуждается)
 make build
 
-# Запуск (для проверки и на Render запускается именно эта цель)
+# Запуск (для проверки и на Render запускается именно эта цель):
+# при наличии DATABASE_URL перед listen применяются миграции и заливаются справочники/рейсы
 make start
 
 # Разработка: перезапуск при изменении файлов
@@ -66,10 +67,40 @@ make lint
 make test
 ```
 
-Тесты — на [Vitest](https://vitest.dev/): бьют по приложению целиком через `app.inject`,
-БД и свободные порты им не нужны (`npx vitest run` — эквивалент). Каждый push проверяется
-в GitHub Actions (`.github/workflows/ci.yml`): `npm ci` → `make build` → `make lint` → `make test`;
-статус — бейдж CI в начале README.
+### Миграции и заливка
+
+Схема описана в `src/db/schema.ts`. Миграции генерируются drizzle-kit (dev-only)
+и коммитятся в `drizzle/`. Применяются **приложением** при старте (см. `src/server.ts`):
+`make start` = миграции → заливка → сервер. И то и другое идемпотентно —
+повторный запуск не создаёт дублей и ничего не удаляет.
+
+```bash
+# Сгенерировать SQL-миграции по текущей схеме (dev; соединение с БД не нужно)
+npm run db:generate
+
+# Применить миграции вручную
+npm run db:migrate
+
+# Залить справочники и рейсы вручную
+npm run db:seed
+```
+
+Заливка рейсов детерминирована (без `Math.random`): окно — 30 дней вперёд от даты заливки,
+для каждой пары различных городов — от 2 до 3 рейсов в день. Окно «скользит»: строки прошлых
+дней остаются, новые досеиваются.
+
+Тесты — на [Vitest](https://vitest.dev/): бьют по приложению целиком через `app.inject`.
+Без `DATABASE_URL` тесты БД пропускаются (`it.skipIf`), остальные проходят без БД и портов.
+Каждый push проверяется в GitHub Actions (`.github/workflows/ci.yml`): `npm ci` → `make build` →
+`make lint` → `make test`, БД поднимается service-контейнером `postgres:17-alpine`; статус — бейдж CI.
+
+Для полного прогона (включая тесты БД) поднимите PostgreSQL и задайте `DATABASE_URL`:
+
+```bash
+docker compose up -d
+cp .env.example .env   # DATABASE_URL=postgres://postgres:postgres@localhost:5432/flights
+DATABASE_URL=postgres://postgres:postgres@localhost:5432/flights make test
+```
 
 Сервер слушает `0.0.0.0` и отдаёт фронтенд и API на одном порту — CORS не нужен,
 фронтенд обращается к `/api/...` по относительным путям с того же адреса.
@@ -81,11 +112,12 @@ make test
 
 ```bash
 # http://localhost:8080 — главная (поиск), /booking/<id>, /lookup (SPA, прямые ссылки работают)
-curl http://localhost:8080/api/cities
-# []
-
 curl http://localhost:8080/api/health
 # {"status":"ok"}
+
+# Города идут из БД, по sort_order: MOW, LED, AER, KZN, SVX, OVB, KGD
+curl http://localhost:8080/api/cities
+# [{"code":"MOW","name":"Москва","country":"Россия"},{"code":"LED","name":"Санкт-Петербург","country":"Россия"}, ...]
 ```
 
 ---
