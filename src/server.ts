@@ -2,12 +2,18 @@ import 'dotenv/config';
 import { buildApp } from './app.ts';
 import { closeDb, requireDatabaseUrl } from './db.ts';
 
-requireDatabaseUrl();
-
-const port = Number(process.env.PORT ?? 3000);
-const host = process.env.HOST ?? '0.0.0.0';
+const port = Number(process.env.PORT ?? 8080);
+const host = '0.0.0.0';
 
 const app = await buildApp();
+
+// ШАГ 2, проверка 6: сервер обязан стартовать и без DATABASE_URL —
+// подключение к БД ленивое (см. db.ts), здесь лишь предупреждаем.
+try {
+  requireDatabaseUrl();
+} catch (err) {
+  app.log.warn(err instanceof Error ? err.message : String(err));
+}
 
 try {
   await app.listen({ port, host });

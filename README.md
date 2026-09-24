@@ -15,18 +15,19 @@
 
 - TypeScript (исполняется Node.js 22.18+ напрямую, без шага сборки)
 - Node.js 22.18+
-- [Fastify](https://fastify.dev/)
+- [Fastify](https://fastify.dev/) + [@fastify/static](https://fastify.dev/#Reference/@fastify/static) (раздача собранного фронтенда)
 - [Drizzle ORM](https://orm.drizzle.team/) + драйвер `postgres`
 - PostgreSQL (локально поднимается через Docker Compose)
+- Готовый фронтенд — npm-пакет `@hexlet/js-flight-booking-frontend`
 
 ## Установка
 
-Требуется Node.js 22.18 или новее (`node -v`) и Docker для локальной БД.
+Требуется Node.js 22.18 или новее (`node -v`), GNU Make и Docker для локальной БД.
 
 ```bash
 git clone https://github.com/isour/test-program-please-ignore-middle-nodejs-project-430.git
 cd test-program-please-ignore-middle-nodejs-project-430
-npm install
+make install   # npm ci
 ```
 
 Подготовка базы данных:
@@ -48,24 +49,37 @@ cp .env.example .env
 ## Использование
 
 ```bash
+# Собрать статику фронтенда в public/ (без БД — сборка миграций в build не входит)
+make build
+
+# Запуск (для проверки и на Render запускается именно эта цель)
+make start
+
 # Разработка: перезапуск при изменении файлов
 npm run dev
 
-# Обычный запуск
-npm start
+# Проверка типов
+make lint
+
+# Тесты
+npm test
 ```
 
-Сервер слушает `PORT` из окружения (по умолчанию `3000`; переопределите в `.env`
-или переменной окружения, например `PORT=4000 npm start`): http://localhost:3000
+Сервер слушает `0.0.0.0` и отдаёт фронтенд и API на одном порту — CORS не нужен,
+фронтенд обращается к `/api/...` по относительным путям с того же адреса.
 
-Проверка живости API:
+Порт по умолчанию — **8080**. Приоритет: `PORT` из окружения
+(например `PORT=3000 make start` или переменная на Render) > `PORT` из `.env` > `8080` в коде.
+Цель `make start` всегда передаёт `PORT` в окружение, поэтому значение `PORT` из `.env`
+при запуске через `make start` не применяется — используйте окружение.
 
 ```bash
-curl http://localhost:3000/api/health
-# {"status":"ok"}
+# http://localhost:8080 — главная (поиск), /booking/<id>, /lookup (SPA, прямые ссылки работают)
+curl http://localhost:8080/api/cities
+# []
 
-# Проверка типов без сборки
-npm run check
+curl http://localhost:8080/api/health
+# {"status":"ok"}
 ```
 
 ---
@@ -79,4 +93,4 @@ npm run check
 
 ## О Хекслете
 
-[Хекслет](https://ru.hexlet.io/) — школа программирования: авторские программы обучения с практикой, поддержкой наставников и реальными проектами, которые остаются в резюме. Этот репозиторий — один из таких проектов.
+[Хекслет](https://ru.hexlet.io/) — школа программирования: авторские программы обучения с практикой, поддержкой наставников и реальными проектами, которые попадают в резюме. Этот репозиторий — один из таких проектов.

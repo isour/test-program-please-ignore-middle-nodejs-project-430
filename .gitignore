@@ -5,6 +5,10 @@ node_modules/
 dist/
 build/
 
+# собранная статика фронтенда (make build — в git не попадает)
+public/assets
+public/index.html
+
 # coverage
 coverage/
 
